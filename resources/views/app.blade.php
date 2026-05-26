@@ -35,7 +35,7 @@
 
         <!-- Sidebar -->
         <div class="col-md-3 col-lg-2 sidebar p-3">
-            <h4 class="mb-4 text-center">📚 Biblioteca</h4>
+            <h4 class="mb-4 text-center">Biblioteca</h4>
             <ul class="nav flex-column">
                 <li class="nav-item">
                     <a href="/" class="nav-link {{ request()->is('/') ? 'active' : '' }}">

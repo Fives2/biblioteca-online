@@ -3,9 +3,20 @@
 @section('content')
     <div class="card">
         <div class="card-header bg-primary text-white">
-            <h4>🔄 Novo Empréstimo</h4>
+            <h4>Novo Empréstimo</h4>
         </div>
         <div class="card-body">
+
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <form action="{{ route('loans.store') }}" method="POST">
                 @csrf
                 <div class="mb-3">

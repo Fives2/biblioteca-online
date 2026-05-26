@@ -6,6 +6,7 @@ use App\Models\Loan;
 use App\Models\Book;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Carbon\Carbon;
 
 class LoanController extends Controller
 {
@@ -58,9 +59,9 @@ class LoanController extends Controller
         return view('loans.show', compact('loan'));
     }
 
+    /** não vai editar */
     public function edit(Loan $loan)
     {
-        // Geralmente não editamos empréstimo, só devolvemos
         return redirect()->route('loans.index');
     }
 

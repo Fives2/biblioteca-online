@@ -3,7 +3,7 @@
 @section('content')
     <div class="card">
         <div class="card-header bg-primary text-white">
-            <h4>🏷️ Nova Categoria</h4>
+            <h4>Nova Categoria</h4>
         </div>
         <div class="card-body">
             <form action="{{ route('categories.store') }}" method="POST">

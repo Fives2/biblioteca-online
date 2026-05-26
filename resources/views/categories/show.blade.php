@@ -3,7 +3,7 @@
 @section('content')
     <div class="card">
         <div class="card-header bg-info text-white">
-            <h4>🏷️ Detalhes da Categoria</h4>
+            <h4>Detalhes da Categoria</h4>
         </div>
         <div class="card-body">
             <h3>{{ $category->name }}</h3>

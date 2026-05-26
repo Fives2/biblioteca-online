@@ -3,7 +3,7 @@
 @section('content')
     <div class="card">
         <div class="card-header bg-primary text-white">
-            <h4>👤 Cadastrar Novo Autor</h4>
+            <h4>Cadastrar Novo Autor</h4>
         </div>
         <div class="card-body">
 
