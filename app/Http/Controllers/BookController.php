@@ -6,9 +6,11 @@ use App\Models\Book;
 use App\Models\Author;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class BookController extends Controller
 {
+
     public function index()
     {
         $books = Book::with(['author', 'category'])->paginate(10);
