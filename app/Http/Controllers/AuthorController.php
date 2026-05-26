@@ -4,51 +4,75 @@ namespace App\Http\Controllers;
 
 use App\Models\Author;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 
 class AuthorController extends Controller
 {
-    public function index(): JsonResponse
+    public function index()
     {
-        $authors = Author::with('books')->paginate(15);
-        return response()->json($authors);
+        $authors = Author::withCount('books')
+                         ->latest()
+                         ->paginate(10);
+        
+        return view('authors.index', compact('authors'));
     }
 
-    public function store(Request $request): JsonResponse
+    public function create()
+    {
+        return view('authors.create');
+    }
+
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'bio' => 'nullable|string',
-            'nationality' => 'nullable|string',
+            'nationality' => 'nullable|string|max:100',
             'birth_date' => 'nullable|date',
         ]);
 
-        $author = Author::create($validated);
-        return response()->json($author, 201);
+        Author::create($validated);
+
+        return redirect()->route('authors.index')
+                         ->with('success', 'Autor cadastrado com sucesso!');
     }
 
-    public function show(Author $author): JsonResponse
+    public function show(Author $author)
     {
         $author->load('books');
-        return response()->json($author);
+        return view('authors.show', compact('author'));
     }
 
-    public function update(Request $request, Author $author): JsonResponse
+    public function edit(Author $author)
+    {
+        return view('authors.edit', compact('author'));
+    }
+
+    public function update(Request $request, Author $author)
     {
         $validated = $request->validate([
-            'name' => 'string|max:255',
+            'name' => 'required|string|max:255',
             'bio' => 'nullable|string',
-            'nationality' => 'nullable|string',
+            'nationality' => 'nullable|string|max:100',
             'birth_date' => 'nullable|date',
         ]);
 
         $author->update($validated);
-        return response()->json($author);
+
+        return redirect()->route('authors.index')
+                         ->with('success', 'Autor atualizado com sucesso!');
     }
 
-    public function destroy(Author $author): JsonResponse
+    public function destroy(Author $author)
     {
+        // Proteção: não permite excluir autor com livros
+        if ($author->books()->count() > 0) {
+            return redirect()->route('authors.index')
+                             ->with('error', 'Não é possível excluir um autor que possui livros cadastrados.');
+        }
+
         $author->delete();
-        return response()->json(null, 204);
+
+        return redirect()->route('authors.index')
+                         ->with('success', 'Autor excluído com sucesso!');
     }
 }

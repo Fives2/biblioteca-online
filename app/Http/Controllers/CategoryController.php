@@ -4,55 +4,66 @@ namespace App\Http\Controllers;
 
 use App\Models\Category;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 
 class CategoryController extends Controller
 {
-    public function index(): JsonResponse
+    public function index()
     {
-        $categories = Category::withCount('books')->paginate(15);
-        return response()->json($categories);
+        $categories = Category::withCount('books')->paginate(10);
+        return view('categories.index', compact('categories'));
     }
 
-    public function store(Request $request): JsonResponse
+    public function create()
+    {
+        return view('categories.create');
+    }
+
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:100|unique:categories',
             'description' => 'nullable|string',
         ]);
 
-        $category = Category::create($validated);
+        Category::create($validated);
 
-        return response()->json($category, 201);
+        return redirect()->route('categories.index')
+                         ->with('success', 'Categoria cadastrada com sucesso!');
     }
 
-    public function show(Category $category): JsonResponse
+    public function show(Category $category)
     {
-        $category->load('books');
-        return response()->json($category);
+        $category->load('books.author');
+        return view('categories.show', compact('category'));
     }
 
-    public function update(Request $request, Category $category): JsonResponse
+    public function edit(Category $category)
+    {
+        return view('categories.edit', compact('category'));
+    }
+
+    public function update(Request $request, Category $category)
     {
         $validated = $request->validate([
-            'name' => 'string|max:100|unique:categories,name,' . $category->id,
+            'name' => 'required|string|max:100|unique:categories,name,' . $category->id,
             'description' => 'nullable|string',
         ]);
 
         $category->update($validated);
 
-        return response()->json($category);
+        return redirect()->route('categories.index')
+                         ->with('success', 'Categoria atualizada com sucesso!');
     }
 
-    public function destroy(Category $category): JsonResponse
+    public function destroy(Category $category)
     {
         if ($category->books()->count() > 0) {
-            return response()->json([
-                'message' => 'Não é possível excluir categoria com livros cadastrados.'
-            ], 422);
+            return redirect()->route('categories.index')
+                             ->with('error', 'Não é possível excluir categoria que possui livros cadastrados.');
         }
 
         $category->delete();
-        return response()->json(null, 204);
+        return redirect()->route('categories.index')
+                         ->with('success', 'Categoria excluída com sucesso!');
     }
 }

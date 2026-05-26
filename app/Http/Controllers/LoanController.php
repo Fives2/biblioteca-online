@@ -4,22 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\Loan;
 use App\Models\Book;
+use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
-use Carbon\Carbon;
 
 class LoanController extends Controller
 {
-    public function index(): JsonResponse
+    public function index()
     {
         $loans = Loan::with(['user', 'book.author', 'book.category'])
                      ->latest()
-                     ->paginate(15);
-        return response()->json($loans);
+                     ->paginate(10);
+        return view('loans.index', compact('loans'));
     }
 
-    public function store(Request $request): JsonResponse
+    public function create()
+    {
+        $users = User::all();
+        $books = Book::where('available', true)->get();
+        return view('loans.create', compact('users', 'books'));
+    }
+
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -30,9 +35,7 @@ class LoanController extends Controller
         $book = Book::findOrFail($validated['book_id']);
 
         if (!$book->available) {
-            return response()->json([
-                'message' => 'Este livro não está disponível para empréstimo.'
-            ], 422);
+            return redirect()->back()->with('error', 'Este livro não está disponível.');
         }
 
         $loan = Loan::create([
@@ -43,92 +46,57 @@ class LoanController extends Controller
             'status' => 'active',
         ]);
 
-        // Marca o livro como indisponível
         $book->update(['available' => false]);
 
-        $loan->load(['user', 'book']);
-
-        return response()->json($loan, 201);
+        return redirect()->route('loans.index')
+                         ->with('success', 'Empréstimo realizado com sucesso!');
     }
 
-    public function show(Loan $loan): JsonResponse
+    public function show(Loan $loan)
     {
         $loan->load(['user', 'book.author', 'book.category']);
-        return response()->json($loan);
+        return view('loans.show', compact('loan'));
     }
 
-    public function update(Request $request, Loan $loan): JsonResponse
+    public function edit(Loan $loan)
     {
-        // Normalmente só permite retornar o livro
-        if ($loan->status === 'returned') {
-            return response()->json(['message' => 'Este empréstimo já foi finalizado.'], 422);
+        // Geralmente não editamos empréstimo, só devolvemos
+        return redirect()->route('loans.index');
+    }
+
+    public function update(Request $request, Loan $loan)
+    {
+        // Usado para devolver o livro
+        if ($loan->status !== 'active') {
+            return redirect()->back()->with('error', 'Este empréstimo já foi finalizado.');
         }
 
-        $validated = $request->validate([
-            'return_date' => 'required|date',
-            'status' => 'in:returned',
-        ]);
-
         $loan->update([
-            'return_date' => $validated['return_date'],
+            'return_date' => now(),
             'status' => 'returned',
         ]);
 
-        // Libera o livro
         $loan->book->update(['available' => true]);
 
-        return response()->json($loan);
+        return redirect()->route('loans.index')
+                         ->with('success', 'Livro devolvido com sucesso!');
     }
 
-    public function destroy(Loan $loan): JsonResponse
+    public function destroy(Loan $loan)
     {
-        // Só permite deletar se não estiver ativo
         if ($loan->status === 'active') {
-            return response()->json(['message' => 'Não é possível excluir empréstimo ativo.'], 422);
+            return redirect()->route('loans.index')
+                             ->with('error', 'Não é possível excluir um empréstimo ativo.');
         }
 
         $loan->delete();
-        return response()->json(null, 204);
+        return redirect()->route('loans.index')
+                         ->with('success', 'Empréstimo excluído com sucesso!');
     }
 
-    // ==================== MÉTODOS EXTRAS ====================
-
-    /**
-     * Empréstimos do usuário logado
-     */
-    public function myLoans(): JsonResponse
+    // Método auxiliar para devolver livro
+    public function returnLoan(Loan $loan)
     {
-        $loans = Loan::where('user_id', Auth::id())
-                     ->with(['book.author', 'book.category'])
-                     ->latest()
-                     ->get();
-
-        return response()->json($loans);
-    }
-
-    /**
-     * Realizar empréstimo do livro (usuário logado)
-     */
-    public function loanBook(Request $request, Book $book): JsonResponse
-    {
-        if (!$book->available) {
-            return response()->json([
-                'message' => 'Livro não disponível no momento.'
-            ], 422);
-        }
-
-        $loan = Loan::create([
-            'user_id' => Auth::id(),
-            'book_id' => $book->id,
-            'loan_date' => now(),
-            'due_date' => Carbon::now()->addDays(15),
-            'status' => 'active',
-        ]);
-
-        $book->update(['available' => false]);
-
-        $loan->load(['book']);
-
-        return response()->json($loan, 201);
+        return $this->update(new Request(), $loan);
     }
 }
