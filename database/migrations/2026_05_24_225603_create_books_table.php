@@ -18,7 +18,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->integer('pages')->nullable();
             $table->date('published_at')->nullable();
-            $table->foreignId('author_id')->constrained()->onDelete('cascade');
+            $table->foreignId('author_id')->constrained();
             $table->foreignId('category_id')->constrained()->onDelete('set null');
             $table->boolean('available')->default(true);
             $table->timestamps();
